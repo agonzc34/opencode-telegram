@@ -30,8 +30,7 @@
     "build": "bun build src/index.ts --outdir dist --target node --external @opencode-ai/plugin --external @opencode-ai/sdk --external grammy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "prepare": "bun run build"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@opencode-ai/sdk": "^1.18.0",
