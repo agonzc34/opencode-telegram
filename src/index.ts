@@ -4,7 +4,7 @@ import { basename, join } from "node:path"
 import { homedir } from "node:os"
 import { loadSettings } from "./config.js"
 import { acquireLock } from "./lock.js"
-import { createLogger } from "./logger.js"
+import { createLogger, createFileSink } from "./logger.js"
 import { createOpenCodeApi } from "./opencode.js"
 import { PendingStore } from "./state.js"
 import { buildHooks } from "./plugin.js"
@@ -41,19 +41,21 @@ function createV2FromInput(input: PluginInput): unknown {
 
 export const TelegramPlugin: Plugin = async (input: PluginInput, options?: PluginOptions) => {
   const shouldStartBot = options?.startBot !== false
+  // Logs go to a file only; never to stdout/stderr, which the TUI surfaces.
+  const sink = createFileSink()
 
   const resolved = loadSettings(undefined, options ?? {})
   if (!resolved.ok) {
-    console.error(`[telegram-opencode] disabled: ${resolved.reason}`)
+    createLogger("error", sink).error(`disabled: ${resolved.reason}`)
     return {}
   }
   const settings = resolved.settings
   if (!settings.enabled) {
-    console.error("[telegram-opencode] disabled via TELEGRAM_OPENCODE_ENABLED")
+    createLogger("error", sink).error("disabled via TELEGRAM_OPENCODE_ENABLED")
     return {}
   }
 
-  const logger = createLogger(settings.logLevel)
+  const logger = createLogger(settings.logLevel, sink)
   const store = new PendingStore()
   const api = createOpenCodeApi(createV2FromInput(input) as any, logger)
   const directory = input.directory
