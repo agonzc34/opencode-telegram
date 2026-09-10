@@ -103,6 +103,26 @@ describe("questionCard", () => {
     expect(flat).toContain(`q:${ID}:0:custom`)
   })
 
+  it("shows the Type answer button when custom is omitted (defaults to true)", () => {
+    const flat = questionCard(pending(), 3500).buttons.flat().map((b) => b.callback_data)
+    expect(flat).toContain(`q:${ID}:0:custom`)
+  })
+
+  it("hides the Type answer button when custom is explicitly false", () => {
+    const p = pending({
+      questions: [
+        {
+          question: "No free text",
+          header: "Fixed",
+          custom: false,
+          options: [{ label: "a", description: "" }],
+        },
+      ],
+    })
+    const flat = questionCard(p, 3500).buttons.flat().map((b) => b.callback_data)
+    expect(flat).not.toContain(`q:${ID}:0:custom`)
+  })
+
   it("uses the plan-review title", () => {
     const card = questionCard(pending({ planReview: true }), 3500)
     expect(card.text).toContain("📋 Plan review")

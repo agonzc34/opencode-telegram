@@ -241,7 +241,8 @@ export class Router {
     decoded: Extract<DecodedCallback, { kind: "question-control" }>,
     queryId: string,
   ): Promise<void> {
-    const { store, transport, api, directory } = this.deps
+    const { store, transport, api, logger, directory } = this.deps
+    logger.info(`question control: ${decoded.control}`, pending.requestId)
     if (decoded.control === "cancel") {
       await api.rejectQuestion({ requestID: pending.requestId, directory })
       store.remove(pending.requestId)

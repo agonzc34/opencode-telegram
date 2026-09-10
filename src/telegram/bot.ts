@@ -18,7 +18,9 @@ export function createGrammyTransport(bot: Bot): TelegramTransport {
     },
     async editCard(chatId, messageId, text, buttons) {
       await bot.api.editMessageText(chatId, messageId, text, {
-        reply_markup: buttons ? { inline_keyboard: buttons } : undefined,
+        // An empty inline_keyboard removes the keyboard; omitting reply_markup
+        // would leave the existing buttons in place.
+        reply_markup: { inline_keyboard: buttons ?? [] },
       })
     },
     async answerCallback(id, text) {

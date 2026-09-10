@@ -109,7 +109,7 @@ export function questionCard(
       },
     ])
   }
-  if (question.custom) {
+  if (question.custom !== false) {
     buttons.push([
       {
         text: "✏️ Type answer",
