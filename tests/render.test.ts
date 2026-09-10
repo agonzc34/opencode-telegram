@@ -107,6 +107,12 @@ describe("questionCard", () => {
     const card = questionCard(pending({ planReview: true }), 3500)
     expect(card.text).toContain("📋 Plan review")
   })
+
+  it("puts the session name at the top of the message", () => {
+    const card = questionCard(pending(), 3500, "My Session")
+    expect(card.text.startsWith("My Session")).toBe(true)
+    expect(card.text.indexOf("My Session")).toBeLessThan(card.text.indexOf("❓"))
+  })
 })
 
 describe("buildAnswers", () => {

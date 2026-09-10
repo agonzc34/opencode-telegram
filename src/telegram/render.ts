@@ -83,8 +83,8 @@ export function questionCard(
   const progress =
     pending.questions.length > 1 ? ` ${pending.currentIndex + 1}/${pending.questions.length}` : ""
   const header = question.header ? ` — ${question.header}` : ""
-  let text = `${titleFor(pending)}${progress}${header}\n\n${truncate(question.question, maxChars)}`
-  if (session) text += `\n\nSession: ${truncate(session, 120)}`
+  const sessionLine = session ? `${truncate(session, 120)}\n` : ""
+  let text = `${sessionLine}${titleFor(pending)}${progress}${header}\n\n${truncate(question.question, maxChars)}`
   if (question.multiple) text += "\n\nSelect one or more, then Submit."
   if (pending.awaitingCustomFor === pending.currentIndex) {
     text += "\n\n✏️ Send your answer as a text message."
