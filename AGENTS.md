@@ -8,7 +8,7 @@ OpenCode plugin (`opencode-telegram`): forwards permission/question/plan-review 
 bun install
 bun run typecheck      # tsc --noEmit
 bun run test           # vitest run
-bun run build          # bun build src/index.ts -> dist/, externalizes @opencode-ai/plugin
+bun run bundle         # bun build src/index.ts -> dist/, externalizes @opencode-ai/plugin
 ```
 
 - Single test: `bunx vitest run tests/render.test.ts` (or add `-t "name"`).
@@ -19,7 +19,7 @@ bun run build          # bun build src/index.ts -> dist/, externalizes @opencode
 
 - Local imports use `.js` extensions even though the files are `.ts` (e.g. `./config.js` in `src/index.ts`). This is required for ESM resolution; do not "fix" it.
 - Tests must not touch the network or Telegram API. Use the fakes in `tests/helpers.ts` (`fakeTransport`, `fakeApi`, `makeRouter`). Suite is fast and fully unit-level.
-- `dist/` is gitignored and committed source of truth is `src/` only. `bun run build` is the only build step.
+- `dist/` is committed; the source of truth is `src/`. `bun run bundle` regenerates `dist/`. Do **not** name this script `build` (or another npm lifecycle name): opencode's bundled pacote runs "git dep preparation" for git installs when such a script exists, and that preparation fails, breaking plugin installation.
 
 ## Configuration
 

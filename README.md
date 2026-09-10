@@ -92,11 +92,11 @@ your bot token secret.
 bun install
 bun run typecheck
 bun run test
-bun run build
+bun run bundle
 ```
 
 `dist/index.js` is committed so git installs work without a build step — run
-`bun run build` and commit the result before pushing changes to `src/`.
+`bun run bundle` and commit the result before pushing changes to `src/`.
 
 To try local changes without pushing, point an
 `~/.config/opencode/plugin/telegram.ts` file at the source:

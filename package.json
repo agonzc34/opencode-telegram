@@ -27,7 +27,7 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --external @opencode-ai/plugin --external @opencode-ai/sdk --external grammy",
+    "bundle": "bun build src/index.ts --outdir dist --target node --external @opencode-ai/plugin --external @opencode-ai/sdk --external grammy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
