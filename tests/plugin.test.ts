@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import { buildHooks } from "../src/plugin.js"
 import { Router } from "../src/telegram/router.js"
 import { PendingStore } from "../src/state.js"
@@ -14,6 +14,8 @@ function hooksWith() {
       enabled: true,
       maxMessageChars: 3500,
       logLevel: "error",
+      completionEnabled: true,
+      completionSentences: 2,
     },
     store: new PendingStore(),
     transport,
@@ -21,8 +23,14 @@ function hooksWith() {
       async replyPermission() {},
       async replyQuestion() {},
       async rejectQuestion() {},
-      async getSessionTitle() {
+      async getSessionInfo() {
         return undefined
+      },
+      async listSessionMessages() {
+        return []
+      },
+      async sendSessionPrompt() {
+        return true
       },
     },
     logger: createLogger("error"),
@@ -32,7 +40,7 @@ function hooksWith() {
   })
   const planExitCalls = new Set<string>()
   const hooks = buildHooks(router, planExitCalls)
-  return { hooks, sent, planExitCalls }
+  return { hooks, sent, planExitCalls, router }
 }
 
 describe("buildHooks", () => {
@@ -72,5 +80,12 @@ describe("buildHooks", () => {
       { args: {} },
     )
     expect(planExitCalls.has("c9")).toBe(true)
+  })
+
+  it("routes session.idle events to the router", async () => {
+    const { hooks, router } = hooksWith()
+    const spy = vi.spyOn(router, "handleSessionIdle").mockResolvedValue(undefined)
+    await hooks.event?.({ event: { type: "session.idle", properties: { sessionID: "s1" } } as any })
+    expect(spy).toHaveBeenCalledWith("s1")
   })
 })

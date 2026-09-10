@@ -24,7 +24,15 @@ function fakeClient(): { client: SdkLike; calls: string[] } {
     session: {
       get: async (input: any) => {
         calls.push(`session.get:${input.sessionID}`)
-        return { data: { title: "My Session" } }
+        return { data: { title: "My Session", parentID: undefined } }
+      },
+      messages: async (input: any) => {
+        calls.push(`session.messages:${input.sessionID}`)
+        return { data: [{ info: { id: "a1", role: "assistant" }, parts: [{ type: "text", text: "hi?" }] }] }
+      },
+      prompt: async (input: any) => {
+        calls.push(`session.prompt:${input.sessionID}:${input.parts[0].text}`)
+        return { data: true }
       },
     },
   } as unknown as SdkLike
@@ -47,10 +55,23 @@ describe("createOpenCodeApi", () => {
     expect(calls).toEqual(['question.reply:r1:[["Yes"]]', "question.reject:r2"])
   })
 
-  it("returns the session title", async () => {
+  it("returns the session info", async () => {
     const { client } = fakeClient()
     const api = createOpenCodeApi(client, createLogger("error"))
-    expect(await api.getSessionTitle("s1", "/proj")).toBe("My Session")
+    expect(await api.getSessionInfo("s1", "/proj")).toEqual({ title: "My Session", parentID: undefined })
+  })
+
+  it("lists session messages", async () => {
+    const { client } = fakeClient()
+    const api = createOpenCodeApi(client, createLogger("error"))
+    expect(await api.listSessionMessages("s1", "/proj")).toHaveLength(1)
+  })
+
+  it("sends a session prompt", async () => {
+    const { client, calls } = fakeClient()
+    const api = createOpenCodeApi(client, createLogger("error"))
+    expect(await api.sendSessionPrompt("s1", "continue", "/proj")).toBe(true)
+    expect(calls).toContain("session.prompt:s1:continue")
   })
 
   it("logs but does not throw when the SDK returns an error", async () => {
@@ -62,10 +83,16 @@ describe("createOpenCodeApi", () => {
         reply: async () => ({ error: { _tag: "NotFound" } }),
         reject: async () => ({ error: { _tag: "NotFound" } }),
       },
-      session: { get: async () => ({ error: { _tag: "NotFound" } }) },
+      session: {
+        get: async () => ({ error: { _tag: "NotFound" } }),
+        messages: async () => ({ error: { _tag: "NotFound" } }),
+        prompt: async () => ({ error: { _tag: "NotFound" } }),
+      },
     }
     const api = createOpenCodeApi(client, logger)
     await expect(api.replyPermission({ requestID: "r1", reply: "reject" })).resolves.toBeUndefined()
+    expect(await api.sendSessionPrompt("s1", "hi")).toBe(false)
+    expect(await api.getSessionInfo("s1")).toBeUndefined()
     expect(warn).toHaveBeenCalled()
   })
 })

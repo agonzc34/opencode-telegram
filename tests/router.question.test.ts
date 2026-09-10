@@ -97,14 +97,14 @@ describe("Router questions", () => {
     })
     await router.handleCallback({ id: "c1", data: "q:q4:0:custom" })
     expect(edits.at(-1)?.text).toContain("Send your answer")
-    const consumed = await router.handleText("c1", "  Ada Lovelace  ")
-    expect(consumed).toBe(true)
+    const result = await router.handleText("c1", "  Ada Lovelace  ")
+    expect(result.handled).toBe(true)
     expect(questions).toEqual([{ requestID: "q4", answers: [["Ada Lovelace"]], directory: "/proj" }])
   })
 
   it("does not consume text when nothing is awaiting", async () => {
     const { router } = makeRouter()
-    expect(await router.handleText("c1", "hello")).toBe(false)
+    expect((await router.handleText("c1", "hello")).handled).toBe(false)
   })
 
   it("marks the card answered elsewhere when closed externally", async () => {

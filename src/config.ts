@@ -54,6 +54,12 @@ export function resolveSettings(
   const maxRaw = Number.parseInt(merged.TELEGRAM_MAX_MESSAGE_CHARS ?? "", 10)
   const maxMessageChars = Number.isFinite(maxRaw) && maxRaw > 0 ? maxRaw : 3500
 
+  const completionRaw = (merged.TELEGRAM_COMPLETION_ENABLED ?? "true").trim().toLowerCase()
+  const completionEnabled = !["false", "0", "no", "off"].includes(completionRaw)
+
+  const sentencesRaw = Number.parseInt(merged.TELEGRAM_COMPLETION_SENTENCES ?? "", 10)
+  const completionSentences = Number.isFinite(sentencesRaw) && sentencesRaw > 0 ? sentencesRaw : 2
+
   return {
     ok: true,
     settings: {
@@ -63,6 +69,8 @@ export function resolveSettings(
       enabled,
       maxMessageChars,
       logLevel,
+      completionEnabled,
+      completionSentences,
     },
   }
 }
@@ -89,6 +97,10 @@ export function loadSettings(
     TELEGRAM_MAX_MESSAGE_CHARS:
       options.maxMessageChars === undefined ? undefined : String(options.maxMessageChars),
     TELEGRAM_LOG_LEVEL: options.logLevel as string | undefined,
+    TELEGRAM_COMPLETION_ENABLED:
+      options.completionEnabled === undefined ? undefined : String(options.completionEnabled),
+    TELEGRAM_COMPLETION_SENTENCES:
+      options.completionSentences === undefined ? undefined : String(options.completionSentences),
   }
 
   return resolveSettings([fileVars, process.env, optionVars])

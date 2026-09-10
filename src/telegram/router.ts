@@ -1,6 +1,7 @@
 import { decodeCallback, type DecodedCallback } from "../callbacks.js"
 import type { Logger } from "../logger.js"
 import type { OpenCodeApi } from "../opencode.js"
+import { extractTrailingSentences, lastAssistantText, looksLikeQuestion } from "../snippet.js"
 import { PendingStore, type PendingPermission, type PendingQuestion } from "../state.js"
 import type {
   PermissionRequestInfo,
@@ -16,6 +17,7 @@ import {
   questionCard,
   questionResolvedText,
   questionSummaryText,
+  truncate,
 } from "./render.js"
 import type { TelegramTransport } from "./transport.js"
 
@@ -58,12 +60,19 @@ function looksLikePlanReview(questions: QuestionInfo[]): boolean {
   return questions.length === 1 && questions[0]?.header === "Build Agent"
 }
 
+export type TextResult = { handled: boolean; deleteMessage: boolean }
+
 export class Router {
+  private readonly activeSessionByChat = new Map<string, string>()
+  private readonly activeMessageByChat = new Map<string, number>()
+  private readonly lastNotifiedBySession = new Map<string, string>()
+
   constructor(private readonly deps: RouterDeps) {}
 
   private async sessionLabel(sessionID: string): Promise<string | undefined> {
     try {
-      return await this.deps.api.getSessionTitle(sessionID, this.deps.directory)
+      const info = await this.deps.api.getSessionInfo(sessionID, this.deps.directory)
+      return info?.title
     } catch {
       return undefined
     }
@@ -288,16 +297,57 @@ export class Router {
     logger.info("question answered", pending.requestId)
   }
 
-  async handleText(chatId: string, text: string): Promise<boolean> {
-    const { store } = this.deps
+  async handleSessionIdle(sessionID: string): Promise<void> {
+    const { settings, transport, api, logger } = this.deps
+    if (!settings.completionEnabled) return
+    try {
+      const info = await api.getSessionInfo(sessionID, this.deps.directory)
+      if (info?.parentID) return
+      const messages = await api.listSessionMessages(sessionID, this.deps.directory)
+      const last = lastAssistantText(messages)
+      if (!last || !looksLikeQuestion(last.text)) return
+      if (this.lastNotifiedBySession.get(sessionID) === last.messageID) return
+
+      const snippet = extractTrailingSentences(last.text, settings.completionSentences)
+      const header = info?.title ? `${truncate(info.title, 120)}\n` : ""
+      const body = `${header}${snippet}\n\n↩️ Reply here to continue this session.`
+      const messageId = await transport.sendCard(settings.chatId, body)
+      this.lastNotifiedBySession.set(sessionID, last.messageID)
+      this.activeSessionByChat.set(settings.chatId, sessionID)
+      this.activeMessageByChat.set(settings.chatId, messageId)
+    } catch (error) {
+      logger.error("failed to send completion snippet", error)
+    }
+  }
+
+  async handleText(chatId: string, text: string): Promise<TextResult> {
+    const { store, transport, api, logger } = this.deps
     const pending = store.getAwaitingCustom(chatId)
-    if (!pending) return false
-    const qIndex = pending.awaitingCustomFor
-    if (qIndex === null) return false
-    pending.customAnswers.set(qIndex, text.trim())
-    pending.selections.set(qIndex, new Set())
-    store.clearAwaitingCustom(chatId)
-    await this.advance(pending)
-    return true
+    if (pending) {
+      const qIndex = pending.awaitingCustomFor
+      if (qIndex === null) return { handled: false, deleteMessage: false }
+      pending.customAnswers.set(qIndex, text.trim())
+      pending.selections.set(qIndex, new Set())
+      store.clearAwaitingCustom(chatId)
+      await this.advance(pending)
+      return { handled: true, deleteMessage: true }
+    }
+
+    const sessionID = this.activeSessionByChat.get(chatId)
+    const trimmed = text.trim()
+    if (!sessionID || trimmed.length === 0) return { handled: false, deleteMessage: false }
+
+    const sent = await api.sendSessionPrompt(sessionID, trimmed, this.deps.directory)
+    this.activeSessionByChat.delete(chatId)
+    const messageId = this.activeMessageByChat.get(chatId)
+    this.activeMessageByChat.delete(chatId)
+    if (sent && messageId !== undefined) {
+      try {
+        await transport.editCard(chatId, messageId, "⏺ Sent to session")
+      } catch (error) {
+        logger.debug("failed to edit completion card", error)
+      }
+    }
+    return { handled: true, deleteMessage: false }
   }
 }

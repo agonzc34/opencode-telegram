@@ -4,6 +4,7 @@ import type { OpenCodeApi } from "../src/opencode.js"
 import { PendingStore } from "../src/state.js"
 import { createLogger } from "../src/logger.js"
 import type { PluginSettings } from "../src/types.js"
+import type { MessageLike } from "../src/snippet.js"
 
 export function fakeTransport() {
   const sent: Array<{ chatId: string; text: string; buttons?: any }> = []
@@ -29,6 +30,9 @@ export function fakeApi() {
   const permissions: any[] = []
   const questions: any[] = []
   const rejects: any[] = []
+  const prompts: any[] = []
+  let messages: MessageLike[] = []
+  let sessionInfo: { title?: string; parentID?: string } | undefined = { title: "My Session" }
   const api: OpenCodeApi = {
     async replyPermission(input) {
       permissions.push(input)
@@ -39,11 +43,30 @@ export function fakeApi() {
     async rejectQuestion(input) {
       rejects.push(input)
     },
-    async getSessionTitle() {
-      return "My Session"
+    async getSessionInfo() {
+      return sessionInfo
+    },
+    async listSessionMessages() {
+      return messages
+    },
+    async sendSessionPrompt(sessionID, text, directory) {
+      prompts.push({ sessionID, text, directory })
+      return true
     },
   }
-  return { api, permissions, questions, rejects }
+  return {
+    api,
+    permissions,
+    questions,
+    rejects,
+    prompts,
+    setMessages: (next: MessageLike[]) => {
+      messages = next
+    },
+    setSessionInfo: (next: { title?: string; parentID?: string } | undefined) => {
+      sessionInfo = next
+    },
+  }
 }
 
 export const settings: PluginSettings = {
@@ -52,14 +75,16 @@ export const settings: PluginSettings = {
   enabled: true,
   maxMessageChars: 3500,
   logLevel: "error",
+  completionEnabled: true,
+  completionSentences: 2,
 }
 
-export function makeRouter() {
+export function makeRouter(overrides: Partial<PluginSettings> = {}) {
   const { transport, sent, edits, answers } = fakeTransport()
-  const { api, permissions, questions, rejects } = fakeApi()
+  const { api, permissions, questions, rejects, prompts, setMessages, setSessionInfo } = fakeApi()
   const store = new PendingStore()
   const router = new Router({
-    settings,
+    settings: { ...settings, ...overrides },
     store,
     transport,
     api,
@@ -68,5 +93,18 @@ export function makeRouter() {
     projectName: "proj",
     isPlanExitCall: () => false,
   })
-  return { router, store, transport, sent, edits, answers, permissions, questions, rejects }
+  return {
+    router,
+    store,
+    transport,
+    sent,
+    edits,
+    answers,
+    permissions,
+    questions,
+    rejects,
+    prompts,
+    setMessages,
+    setSessionInfo,
+  }
 }

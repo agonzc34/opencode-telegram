@@ -78,4 +78,29 @@ describe("resolveSettings", () => {
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.settings.logLevel).toBe("info")
   })
+
+  it("defaults completionEnabled=true and completionSentences=2", () => {
+    const result = resolveSettings([{ TELEGRAM_BOT_TOKEN: "t", TELEGRAM_CHAT_ID: "1" }])
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.settings.completionEnabled).toBe(true)
+      expect(result.settings.completionSentences).toBe(2)
+    }
+  })
+
+  it("parses completion options", () => {
+    const result = resolveSettings([
+      {
+        TELEGRAM_BOT_TOKEN: "t",
+        TELEGRAM_CHAT_ID: "1",
+        TELEGRAM_COMPLETION_ENABLED: "false",
+        TELEGRAM_COMPLETION_SENTENCES: "4",
+      },
+    ])
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.settings.completionEnabled).toBe(false)
+      expect(result.settings.completionSentences).toBe(4)
+    }
+  })
 })

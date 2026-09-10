@@ -24,6 +24,9 @@ export function buildHooks(router: Router, planExitCalls: Set<string>): Hooks {
         case "question.rejected":
           await router.handleQuestionClosed(e.properties.requestID)
           break
+        case "session.idle":
+          await router.handleSessionIdle(e.properties.sessionID)
+          break
         default:
           break
       }

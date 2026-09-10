@@ -7,6 +7,8 @@ export type PluginSettings = {
   enabled: boolean
   maxMessageChars: number
   logLevel: LogLevel
+  completionEnabled: boolean
+  completionSentences: number
 }
 
 export type InlineButton = { text: string; callback_data: string }

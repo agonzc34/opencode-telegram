@@ -55,8 +55,8 @@ export function registerHandlers(
   bot.on("message:text", async (ctx) => {
     if (String(ctx.chat.id) !== settings.chatId || !isAuthorized(settings, ctx.from?.id)) return
     try {
-      const consumed = await router.handleText(String(ctx.chat.id), ctx.message.text)
-      if (consumed) await ctx.deleteMessage().catch(() => undefined)
+      const result = await router.handleText(String(ctx.chat.id), ctx.message.text)
+      if (result.deleteMessage) await ctx.deleteMessage().catch(() => undefined)
     } catch (error) {
       logger.error("text handler failed", error)
     }
