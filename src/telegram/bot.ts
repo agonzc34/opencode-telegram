@@ -4,6 +4,10 @@ import type { PluginSettings } from "../types.js"
 import type { Router } from "./router.js"
 import type { TelegramTransport } from "./transport.js"
 
+export function createGrammyBot(token: string): Bot {
+  return new Bot(token)
+}
+
 export function createGrammyTransport(bot: Bot): TelegramTransport {
   return {
     async sendCard(chatId, text, buttons) {

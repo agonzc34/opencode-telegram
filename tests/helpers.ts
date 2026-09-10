@@ -68,5 +68,5 @@ export function makeRouter() {
     projectName: "proj",
     isPlanExitCall: () => false,
   })
-  return { router, store, sent, edits, answers, permissions, questions, rejects }
+  return { router, store, transport, sent, edits, answers, permissions, questions, rejects }
 }
