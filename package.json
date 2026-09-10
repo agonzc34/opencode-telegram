@@ -3,20 +3,34 @@
   "version": "0.1.0",
   "description": "OpenCode plugin: answer permissions and questions from Telegram",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agonzc34/opencode-telegram.git"
+  },
+  "homepage": "https://github.com/agonzc34/opencode-telegram#readme",
+  "bugs": {
+    "url": "https://github.com/agonzc34/opencode-telegram/issues"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "telegram",
+    "notifications",
+    "permissions",
+    "questions"
+  ],
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+    ".": "./dist/index.js"
   },
   "files": ["dist"],
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --external @opencode-ai/plugin",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "bun run build"
   },
   "dependencies": {
     "@opencode-ai/sdk": "^1.18.0",

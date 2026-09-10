@@ -4,46 +4,7 @@ OpenCode plugin: get Telegram notifications when OpenCode needs input, and answe
 permissions and questions from Telegram. The TUI and Telegram both show the
 prompt; whichever is answered first wins.
 
-## Install (local)
-
-1. Install dependencies:
-
-   ```
-   bun install
-   ```
-
-2. Create `~/.config/opencode/plugin/telegram.ts`:
-
-   ```ts
-   export { TelegramPlugin } from "/path/to/opencode-telegram/src/index.ts"
-   ```
-
-3. Ensure `~/.config/opencode/telegram.env` contains:
-
-   ```
-   TELEGRAM_BOT_TOKEN=...
-   TELEGRAM_CHAT_ID=...
-   ```
-
-4. Restart OpenCode.
-
-## Configuration
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `TELEGRAM_BOT_TOKEN` | — | required |
-| `TELEGRAM_CHAT_ID` | — | required; also the auth allow-list |
-| `TELEGRAM_ALLOWED_USER_ID` | = chat id | optional extra user check |
-| `TELEGRAM_OPENCODE_ENABLED` | `true` | kill switch |
-| `TELEGRAM_MAX_MESSAGE_CHARS` | `3500` | truncate long fields |
-| `TELEGRAM_LOG_LEVEL` | `info` | `debug`/`info`/`warn`/`error` |
-| `TELEGRAM_COMPLETION_ENABLED` | `true` | turn-end snippet + reply |
-| `TELEGRAM_COMPLETION_SENTENCES` | `2` | trailing sentences to send |
-
-Settings can also be passed as plugin options in `opencode.json`; options win
-over environment variables.
-
-## Behavior
+## Features
 
 - **Permissions** — `✅ Allow once` / `♾️ Always` / `❌ Reject`.
 - **Questions** — one question at a time; single/multi-select, free-text
@@ -55,11 +16,92 @@ over environment variables.
 - Requests stay pending until answered; nothing is auto-denied.
 - Only the first OpenCode instance to acquire
   `~/.local/state/opencode-telegram/bot.lock` polls Telegram.
+- Logs go to `~/.local/state/opencode-telegram/plugin.log` (never to the TUI).
+
+## Requirements
+
+- OpenCode (the plugin runs inside the OpenCode server process).
+- A Telegram bot: create one with [@BotFather](https://t.me/BotFather) and copy
+  its token.
+- Your numeric Telegram user/chat id: message
+  [@userinfobot](https://t.me/userinfobot).
+
+## Install
+
+Add the plugin to `~/.config/opencode/opencode.json` (or a project
+`opencode.json`):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["opencode-telegram@git+https://github.com/agonzc34/opencode-telegram.git"]
+}
+```
+
+OpenCode installs plugins and their dependencies with Bun at startup. Restart
+OpenCode after adding or changing the entry.
+
+## Configuration
+
+Provide the bot token and chat id either as plugin options (recommended):
+
+```json
+{
+  "plugin": [
+    [
+      "opencode-telegram@git+https://github.com/agonzc34/opencode-telegram.git",
+      { "botToken": "123456:ABC...", "chatId": "123456789" }
+    ]
+  ]
+}
+```
+
+or via environment variables (for example in
+`~/.config/opencode/telegram.env`, in the process environment, or in
+`~/.config/opencode/opencode.json` `environment`):
+
+```
+TELEGRAM_BOT_TOKEN=123456:ABC...
+TELEGRAM_CHAT_ID=123456789
+```
+
+Plugin options win over environment variables.
+
+| Option / variable | Default | Purpose |
+|---|---|---|
+| `botToken` / `TELEGRAM_BOT_TOKEN` | — | required |
+| `chatId` / `TELEGRAM_CHAT_ID` | — | required; also the auth allow-list |
+| `allowedUserId` / `TELEGRAM_ALLOWED_USER_ID` | = chat id | optional extra user check |
+| `enabled` / `TELEGRAM_OPENCODE_ENABLED` | `true` | kill switch |
+| `maxMessageChars` / `TELEGRAM_MAX_MESSAGE_CHARS` | `3500` | truncate long fields |
+| `logLevel` / `TELEGRAM_LOG_LEVEL` | `info` | `debug`/`info`/`warn`/`error` |
+| `completionEnabled` / `TELEGRAM_COMPLETION_ENABLED` | `true` | turn-end snippet + reply |
+| `completionSentences` / `TELEGRAM_COMPLETION_SENTENCES` | `2` | trailing sentences to send |
+
+> If you already use another Telegram notifier for permissions/questions, disable
+> its Telegram message to avoid duplicates.
+
+## Security
+
+Only messages from `chatId` (and `allowedUserId` when set) are processed. Keep
+your bot token secret.
 
 ## Development
 
 ```
+bun install
 bun run typecheck
 bun run test
 bun run build
 ```
+
+To try local changes without pushing, point an
+`~/.config/opencode/plugin/telegram.ts` file at the source:
+
+```ts
+export { TelegramPlugin } from "/absolute/path/to/opencode-telegram/src/index.ts"
+```
+
+## License
+
+MIT
