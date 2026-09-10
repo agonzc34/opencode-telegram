@@ -1,4 +1,5 @@
 import type { Plugin, PluginInput, PluginOptions } from "@opencode-ai/plugin"
+import { createOpencodeClient as createV2Client } from "@opencode-ai/sdk/v2"
 import { basename, join } from "node:path"
 import { homedir } from "node:os"
 import { loadSettings } from "./config.js"
@@ -21,6 +22,23 @@ const NOOP_TRANSPORT: TelegramTransport = {
   async answerCallback() {},
 }
 
+// The client injected into a plugin is the v1 SDK, which has no `question`
+// namespace and uses a legacy permission method. Derive a v2 client from the
+// injected client's config (base URL + headers) so replies target the right API.
+function createV2FromInput(input: PluginInput): unknown {
+  const injected = input.client as unknown as { _client?: { getConfig?: () => Record<string, any> } }
+  const config = injected?._client?.getConfig?.() ?? {}
+  const headers = { ...(config.headers ?? {}) }
+  delete headers["x-opencode-directory"]
+  delete headers["content-type"]
+  return createV2Client({
+    baseUrl: config.baseUrl ?? input.serverUrl?.toString(),
+    headers,
+    directory: input.directory,
+    ...(config.fetch ? { fetch: config.fetch } : {}),
+  } as any)
+}
+
 export const TelegramPlugin: Plugin = async (input: PluginInput, options?: PluginOptions) => {
   const shouldStartBot = options?.startBot !== false
 
@@ -37,7 +55,7 @@ export const TelegramPlugin: Plugin = async (input: PluginInput, options?: Plugi
 
   const logger = createLogger(settings.logLevel)
   const store = new PendingStore()
-  const api = createOpenCodeApi(input.client as any, logger)
+  const api = createOpenCodeApi(createV2FromInput(input) as any, logger)
   const directory = input.directory
   const projectName = basename(input.worktree || input.directory)
   const planExitCalls = new Set<string>()

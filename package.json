@@ -19,11 +19,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@opencode-ai/sdk": "^1.18.0",
     "grammy": "^1.30.0"
   },
   "devDependencies": {
     "@opencode-ai/plugin": "^1.18.0",
-    "@opencode-ai/sdk": "^1.18.0",
     "@types/node": "^22.0.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
